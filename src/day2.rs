@@ -1,13 +1,14 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::iter::Sum;
-use std::ops::{Add, AddAssign};
+use std::ops::Add;
 use std::str::FromStr;
 
+#[allow(dead_code)]
 pub fn solution() {
     let directions = load("input/day2.txt");
 
     println!("Part 1: {}", distance(&directions));
+    println!("Part 2: {}", aim_distance(&directions));
 }
 
 fn load(filename: &str) -> Vec<Direction> {
@@ -26,9 +27,18 @@ fn distance(directions: &Vec<Direction>) -> i32 {
     end_position.depth * end_position.distance
 }
 
+/// Follows the given directions and returns horizontal position * depth.  Up and down directions
+/// aim the submarine instead of moving it up and down.
+fn aim_distance(directions: &Vec<Direction>) -> i32 {
+    let end_position= directions.iter().fold(AimPosition::default(), |pos, dir| pos + dir);
+
+    end_position.depth * end_position.distance
+}
+
 #[derive(Debug, Eq, PartialEq)]
 struct ParseErr {}
 
+/// Direction describes where and how far the submarine should move.
 #[derive(Debug, Eq, PartialEq)]
 enum Direction {
     Forward(i32),
@@ -52,6 +62,8 @@ impl FromStr for Direction {
     }
 }
 
+/// Position captures the submarine's depth and forward distance.  Up and Down directions
+/// move the sub up and down.
 #[derive(Debug, Eq, PartialEq)]
 struct Position {
     depth: i32,
@@ -91,6 +103,51 @@ impl Add<&Direction> for Position {
     }
 }
 
+/// AimPosition captures the sub's depth, forward distance, and aim angle.  Up and Down directions
+/// adjust the sub's aim, and Forward adjusts it's forward and horizontal positions based on the aim.
+#[derive(Debug, Eq, PartialEq)]
+struct AimPosition {
+    depth: i32,
+    distance: i32,
+    aim: i32,
+}
+
+impl AimPosition {
+    fn new(depth: i32, distance: i32, aim: i32) -> Self {
+        AimPosition { depth, distance, aim }
+    }
+}
+
+impl Default for AimPosition {
+    fn default() -> Self {
+        Self::new(0, 0, 0)
+    }
+}
+
+impl Add<&Direction> for AimPosition {
+    type Output = AimPosition;
+
+    fn add(self, dir: &Direction) -> Self::Output {
+        match dir {
+            Direction::Forward(amount) => AimPosition {
+                depth: self.depth + self.aim * amount,
+                distance: self.distance + amount,
+                aim: self.aim,
+            },
+            Direction::Down(amount) => AimPosition {
+                depth: self.depth,
+                distance: self.distance,
+                aim: self.aim + amount,
+            },
+            Direction::Up(amount) => AimPosition {
+                depth: self.depth,
+                distance: self.distance,
+                aim: self.aim - amount,
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,5 +179,27 @@ mod tests {
         ];
 
         assert_eq!(150, distance(&directions))
+    }
+
+    #[test]
+    fn add_aim_direction() {
+        assert_eq!(AimPosition::new(0, 3, 0), AimPosition::default() + &Direction::Forward(3));
+        assert_eq!(AimPosition::new(15, 3, 5), AimPosition::new(0, 0, 5) + &Direction::Forward(3));
+        assert_eq!(AimPosition::new(0, 0, 5), AimPosition::default() + &Direction::Down(5));
+        assert_eq!(AimPosition::new(0, 0, -10), AimPosition::default() + &Direction::Up(10));
+    }
+
+    #[test]
+    fn test_aim_distance() {
+        let directions = vec![
+            Direction::Forward(5),
+            Direction::Down(5),
+            Direction::Forward(8),
+            Direction::Up(3),
+            Direction::Down(8),
+            Direction::Forward(2),
+        ];
+
+        assert_eq!(900, aim_distance(&directions))
     }
 }

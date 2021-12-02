@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+#[allow(dead_code)]
 pub fn solution() {
     let measurements = load_measurements("input/day1.txt");
 
@@ -8,6 +9,7 @@ pub fn solution() {
     println!("Part 2: {}", num_increasing_windows(&measurements));
 }
 
+#[allow(dead_code)]
 fn load_measurements(filename: &str) -> Vec<i32> {
     let f = File::open(filename).unwrap();
     let f = BufReader::new(f);
