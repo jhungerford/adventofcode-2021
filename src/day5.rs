@@ -7,7 +7,8 @@ use std::str::FromStr;
 pub fn solution() {
     let lines = load("input/day5.txt");
 
-    println!("Part 1: {}", num_overlapping(&lines));
+    println!("Part 1: {}", num_overlapping(&lines, |line| line.is_horizontal() || line.is_vertical()));
+    println!("Part 2: {}", num_overlapping(&lines, |_| true));
 }
 
 /// Loads lines from the given file.
@@ -20,12 +21,12 @@ fn load(filename: &str) -> Vec<Line> {
         .collect()
 }
 
-/// Returns the number of points where at least two horizontal or vertical lines overlap.
-fn num_overlapping(lines: &Vec<Line>) -> usize {
+/// Returns the number of points where at least lines overlap.
+fn num_overlapping(lines: &Vec<Line>, keep: fn(&Line) -> bool) -> usize {
     let mut point_lines: HashMap<Point, usize> = HashMap::new();
 
     for line in lines {
-        if line.is_horizontal() || line.is_vertical() {
+        if keep(line) {
             for point in line.points() {
                 *point_lines.entry(point).or_default() += 1
             }
@@ -73,17 +74,17 @@ impl Line {
 
     /// Returns all of the points on this line.
     fn points(&self) -> Vec<Point> {
-        if self.is_horizontal() {
-            (self.from.x.min(self.to.x) ..= self.from.x.max(self.to.x))
-                .map(|x| Point::new(x, self.from.y))
-                .collect()
-        } else if self.is_vertical() {
-            (self.from.y.min(self.to.y) ..= self.from.y.max(self.to.y))
-                .map(|y| Point::new(self.from.x, y))
-                .collect()
-        } else {
-            Vec::new()
-        }
+        let x_step = (self.to.x as i32 - self.from.x as i32).signum();
+        let y_step = (self.to.y as i32 - self.from.y as i32).signum();
+        let length = (self.from.x as i32 - self.to.x as i32).abs()
+            .max((self.from.y as i32 - self.to.y as i32).abs());
+
+        (0..=length as i32)
+            .map(|i| Point::new(
+                (self.from.x as i32 + i * x_step) as usize,
+                (self.from.y as i32 + i * y_step) as usize,
+            ))
+            .collect()
     }
 }
 
@@ -115,6 +116,13 @@ mod tests {
     #[test]
     fn test_sample() {
         let lines = load("input/day5_sample.txt");
-        assert_eq!(5, num_overlapping(&lines));
+        assert_eq!(5, num_overlapping(&lines, |line| line.is_horizontal() || line.is_vertical()));
+        assert_eq!(12, num_overlapping(&lines, |line| true));
+    }
+
+    #[test]
+    fn test_line_points() {
+        assert_eq!(vec![Point::new(1, 1), Point::new(2, 2), Point::new(3, 3)], Line::new(1, 1, 3, 3).points());
+        assert_eq!(vec![Point::new(9, 7), Point::new(8, 8), Point::new(7, 9)], Line::new(9, 7, 7, 9).points());
     }
 }
