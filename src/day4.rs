@@ -1,20 +1,20 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
 #[allow(dead_code)]
 pub fn solution() {
     let mut game = BingoGame::load("input/day4.txt");
-    let winning_score = game.play();
-
-    println!("Part 1: {}", winning_score);
+    println!("Part 1: {}", game.first_winner());
+    println!("Part 1: {}", game.last_winner());
 }
 
 /// BingoGame represents a game of bingo, and contains the numbers that are drawn and the boards.
 struct BingoGame {
-    nums: Vec<usize>,
+    nums: VecDeque<usize>,
     boards: Vec<Board>,
     num_to_board_positions: HashMap<usize, Vec<BoardPosition>>,
+    winners: HashSet<usize>,
 }
 
 impl BingoGame {
@@ -30,7 +30,7 @@ impl BingoGame {
         let nums = lines.next().unwrap().unwrap()
             .split(',')
             .map(|n| n.parse::<usize>().unwrap())
-            .collect::<Vec<usize>>();
+            .collect::<VecDeque<usize>>();
 
         // Followed by an optional newline.
         let _ = lines.next();
@@ -51,23 +51,51 @@ impl BingoGame {
             }
         }
 
-        BingoGame { nums, boards, num_to_board_positions }
+        BingoGame { nums, boards, num_to_board_positions, winners: HashSet::new() }
     }
 
     /// Plays a game of bingo, returning the score of the winning board.
-    fn play(&mut self) -> usize {
-        for num in &self.nums {
-            for board_position in self.num_to_board_positions.entry(*num).or_default() {
-                let board = &mut self.boards[board_position.board];
-                board.mark(board_position.row, board_position.col);
+    fn first_winner(&mut self) -> usize {
+        while let Some(num) = self.nums.pop_front() {
+            let winners = self.call(num);
 
-                if board.is_winner() {
-                    return board.score(*num);
-                }
+            if !winners.is_empty() {
+                return winners[0]
             }
         }
 
         panic!("No winner after all numbers drawn.")
+    }
+
+    /// Finishes a game of bingo, returning the score of the last winning board.
+    fn last_winner(&mut self) -> usize {
+        while let Some(num) = self.nums.pop_front() {
+            let winners = self.call(num);
+
+            if !winners.is_empty() && self.winners.len() == self.boards.len() {
+                return winners[winners.len() - 1];
+            }
+        }
+
+        panic!("No winner after all numbers drawn.")
+    }
+
+    /// Calls the given number, returning a list of scores of boards that won this round (if any).
+    fn call(&mut self, num: usize) -> Vec<usize> {
+        let mut winners = Vec::new();
+
+        for board_position in self.num_to_board_positions.entry(num).or_default() {
+            let board = &mut self.boards[board_position.board];
+            board.mark(board_position.row, board_position.col);
+
+            if board.is_winner() {
+                if self.winners.insert(board_position.board) {
+                    winners.push(board.score(num));
+                }
+            }
+        }
+
+        winners
     }
 }
 
@@ -175,6 +203,7 @@ mod tests {
     #[test]
     fn play_sample() {
         let mut game = BingoGame::load("input/day4_sample.txt");
-        assert_eq!(4512, game.play());
+        assert_eq!(4512, game.first_winner());
+        assert_eq!(1924, game.last_winner());
     }
 }
