@@ -6,18 +6,19 @@ pub fn solution() {
     let mut fish = Fish::load("input/day6.txt");
 
     println!("Part 1: {}", fish.tick_days(80));
+    println!("Part 2: {}", fish.tick_days(256-80));
 }
 
 #[derive(Debug)]
 struct Fish {
     /// Indexes are timers (0..=8), and values are the number
     /// of fish at each timer.
-    counts: Vec<i32>
+    counts: Vec<u64>
 }
 
 impl Fish {
     /// Constructs a new school of fish from the given timers.
-    fn new(timers: Vec<i32>) -> Self {
+    fn new(timers: Vec<u64>) -> Self {
         // Fish ages range from 0 ..= 8
         let mut counts = vec![0; 9];
 
@@ -62,7 +63,7 @@ impl Fish {
 
     /// Ticks the given number of days, returning the
     /// total number of lanternfish.
-    fn tick_days(&mut self, days: usize) -> i32 {
+    fn tick_days(&mut self, days: usize) -> u64 {
         for _ in 0..days {
             self.tick();
         }
@@ -71,7 +72,7 @@ impl Fish {
     }
 
     /// Returns the total number of lanternfish.
-    fn total(&self) -> i32 {
+    fn total(&self) -> u64 {
         self.counts.iter().sum()
     }
 }
@@ -84,6 +85,7 @@ mod tests {
     fn test_sample() {
         let mut fish = Fish::new(vec![3,4,3,1,2]);
         assert_eq!(26, fish.tick_days(18));
-        assert_eq!(5934, fish.tick_days(62));
+        assert_eq!(5934, fish.tick_days(80-18));
+        assert_eq!(26984457539, fish.tick_days(256-80));
     }
 }
