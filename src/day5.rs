@@ -117,7 +117,7 @@ mod tests {
     fn test_sample() {
         let lines = load("input/day5_sample.txt");
         assert_eq!(5, num_overlapping(&lines, |line| line.is_horizontal() || line.is_vertical()));
-        assert_eq!(12, num_overlapping(&lines, |line| true));
+        assert_eq!(12, num_overlapping(&lines, |_| true));
     }
 
     #[test]
