@@ -5,11 +5,13 @@ use std::io::{BufRead, BufReader};
 
 #[allow(dead_code)]
 pub fn solution() {
-    let mut map = Map::load("input/day11.txt");
+    let map = Map::load("input/day11.txt");
 
-    println!("Part 1: {}", map.step_times(100));
+    println!("Part 1: {}", map.clone().step_times(100));
+    println!("Part 2: {}", map.clone().all_flash())
 }
 
+#[derive(Debug, Clone)]
 struct Map {
     levels: Vec<Vec<i32>>
 }
@@ -71,6 +73,18 @@ impl Map {
         (0 .. steps).map(|_| self.step()).sum()
     }
 
+    /// Returns the first step when all octopuses flash.
+    fn all_flash(&mut self) -> usize {
+        let all_count = self.levels.len() * self.levels[0].len();
+        let mut step = 1;
+
+        while self.step() < all_count {
+            step += 1;
+        }
+
+        step
+    }
+
     /// Returns a list of valid neighbors around the given location.
     fn neighbors(&self, loc: &Location) -> Vec<Location> {
         let mut neighbors = Vec::new();
@@ -116,7 +130,8 @@ impl Location {
 
 #[test]
 fn test_sample() {
-    let mut map = Map::load("input/day11_sample.txt");
+    let map = Map::load("input/day11_sample.txt");
 
-    assert_eq!(1656, map.step_times(100));
+    assert_eq!(1656, map.clone().step_times(100));
+    assert_eq!(195, map.clone().all_flash());
 }
