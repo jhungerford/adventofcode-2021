@@ -6,7 +6,8 @@ use std::io::{BufRead, BufReader};
 pub fn solution() {
     let cave_system = CaveSystem::load("input/day12.txt");
 
-    println!("Part 1: {}", cave_system.paths());
+    println!("Part 1: {}", cave_system.paths(false));
+    println!("Part 2: {}", cave_system.paths(true));
 }
 
 #[derive(Debug)]
@@ -41,12 +42,14 @@ impl CaveSystem {
 
     /// Returns the number of paths through this cave system.
     /// Paths start at 'start', end at 'end', and can travel through capitalized
-    /// caves more than once.
-    fn paths(&self) -> usize {
+    /// caves more than once.  If small_twice is true, the sub can travel through a single
+    /// lowercase cave (other than start or end) twice.
+    fn paths(&self, small_twice: bool) -> usize {
         #[derive(Debug)]
         struct Explore {
             visited: HashSet<String>,
-            at: String
+            at: String,
+            small_twice: bool
         }
 
         impl Explore {
@@ -55,23 +58,41 @@ impl CaveSystem {
                 Explore {
                     visited: vec!["start".to_string()].into_iter().collect(),
                     at: "start".to_string(),
+                    small_twice: false,
                 }
             }
 
             /// Returns whether the sub can visit the given cave.  Caves with capital names
             /// can be visited more than once.
-            fn can_visit(&self, cave: &str) -> bool {
-                cave.chars().next().unwrap().is_uppercase() || !self.visited.contains(cave)
+            fn can_visit(&self, cave: &str, small_twice: bool) -> bool {
+                // Can visit big caves or caves we've never visited before any number of times.
+                let is_big = cave.chars().next().unwrap().is_uppercase();
+                if is_big || !self.visited.contains(cave) {
+                    return true;
+                }
+
+                // Can visit small caves twice if we're allowed.
+                if small_twice && !self.small_twice && "start" != cave && "end" != cave {
+                    return true;
+                }
+
+                false
             }
 
             /// Returns a new Explore with the sub at the given cave.
             fn visit(&self, cave: &str) -> Self {
+                let is_small_twice = cave.chars().next().unwrap().is_lowercase()
+                    && "start" != cave
+                    && "end" != cave
+                    && self.visited.contains(cave);
+
                 let mut visited: HashSet<String> = self.visited.iter().cloned().collect();
                 visited.insert(cave.to_string());
 
                 Explore {
                     visited,
-                    at: cave.to_string()
+                    at: cave.to_string(),
+                    small_twice: self.small_twice || is_small_twice,
                 }
             }
         }
@@ -88,7 +109,7 @@ impl CaveSystem {
                 paths += 1;
             } else {
                 for neighbor in &self.caves[&explore.at] {
-                    if explore.can_visit(&neighbor) {
+                    if explore.can_visit(&neighbor, small_twice) {
                         to_explore.push(explore.visit(&neighbor));
                     }
                 }
@@ -101,7 +122,11 @@ impl CaveSystem {
 
 #[test]
 fn paths_samples() {
-    assert_eq!(10, CaveSystem::load("input/day12_sample.txt").paths());
-    assert_eq!(19, CaveSystem::load("input/day12_sample2.txt").paths());
-    assert_eq!(226, CaveSystem::load("input/day12_sample3.txt").paths());
+    assert_eq!(10, CaveSystem::load("input/day12_sample.txt").paths(false));
+    assert_eq!(19, CaveSystem::load("input/day12_sample2.txt").paths(false));
+    assert_eq!(226, CaveSystem::load("input/day12_sample3.txt").paths(false));
+
+    assert_eq!(36, CaveSystem::load("input/day12_sample.txt").paths(true));
+    assert_eq!(103, CaveSystem::load("input/day12_sample2.txt").paths(true));
+    assert_eq!(3509, CaveSystem::load("input/day12_sample3.txt").paths(true));
 }
