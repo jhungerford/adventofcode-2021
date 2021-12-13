@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
@@ -10,6 +10,9 @@ pub fn solution() {
     let mut paper = Paper::load("input/day13.txt");
 
     println!("Part 1: {}", paper.fold_once());
+
+    paper.fold_all();
+    println!("Part 2 (read letters):\n{:?}", paper);
 }
 
 #[derive(Debug)]
@@ -19,6 +22,12 @@ enum ParseErr {}
 struct Dot {
     x: i32,
     y: i32,
+}
+
+impl Dot {
+    fn new(x: i32, y: i32) -> Self {
+        Dot { x, y }
+    }
 }
 
 impl FromStr for Dot {
@@ -57,7 +66,6 @@ impl FromStr for Fold {
     }
 }
 
-#[derive(Debug)]
 struct Paper {
     dots: Vec<Dot>,
     folds: VecDeque<Fold>,
@@ -116,6 +124,33 @@ impl Paper {
 
         // return the number of dots that are still visible.
         self.dots.len()
+    }
+
+    fn fold_all(&mut self) {
+        while !self.folds.is_empty() {
+            self.fold_once();
+        }
+    }
+}
+
+impl Debug for Paper {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let (max_x, max_y) = self.dots.iter()
+            .fold((0, 0), |(x_acc, y_acc), dot| (x_acc.max(dot.x), y_acc.max(dot.y)));
+
+        for y in 0..=max_y {
+            for x in 0..=max_x {
+                if self.dots.contains(&Dot::new(x, y)) {
+                    write!(f, "#")?;
+                } else {
+                    write!(f, " ")?;
+                }
+            }
+
+            writeln!(f)?;
+        }
+
+        Ok(())
     }
 }
 
