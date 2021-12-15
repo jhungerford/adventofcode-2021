@@ -4,10 +4,10 @@ use std::io::{BufRead, BufReader};
 
 #[allow(dead_code)]
 pub fn solution() {
-    let mut poly = Polymerization::load("input/day14.txt");
+    let poly = Polymerization::load("input/day14.txt");
 
-    poly.step(10);
-    println!("Part 1: {}", poly.score());
+    println!("Part 1: {}", poly.score(10));
+    println!("Part 2: {}", poly.score(40));
 }
 
 #[derive(Debug)]
@@ -45,41 +45,50 @@ impl Polymerization {
         Polymerization { template, rules }
     }
 
-    fn step(&mut self, times: usize) {
+    /// Performs the given number of insertions and returns the quantity of the most common element
+    /// minus the quantity of the least common element.
+    fn score(&self, times: usize) -> usize {
+        let mut count: HashMap<(char, char), usize> = HashMap::new();
+
+        // Load the template into count.
+        for (a, b) in self.template.iter().zip(self.template.iter().skip(1)) {
+            *count.entry((*a, *b)).or_default() += 1;
+        }
+
+        // Build the polymer.
         for _ in 0..times {
-            let mut new_template = Vec::with_capacity(self.template.len() * 2);
+            let mut new_count = HashMap::new();
 
-            let pairs = self.template.iter()
-                .cloned()
-                .zip(self.template.iter().cloned().skip(1));
-
-            for pair in pairs {
-                new_template.push(pair.0);
-                new_template.push(self.rules[&pair]);
+            for ((a, b), num) in count {
+                let letter = self.rules[&(a, b)];
+                *new_count.entry((a, letter)).or_default() += num;
+                *new_count.entry((letter, b)).or_default() += num;
             }
 
-            new_template.push(self.template[self.template.len() - 1]);
-
-            self.template = new_template;
-        }
-    }
-
-    /// Returns the quantity of the most common element minus the quantity
-    /// of the least common element.
-    fn score(&self) -> usize {
-        let mut element_count: HashMap<&char, usize> = HashMap::new();
-        for c in &self.template {
-            *element_count.entry(c).or_default() += 1;
+            count = new_count;
         }
 
-        element_count.values().max().unwrap() - element_count.values().min().unwrap()
+        // Count individual letters.  Since pairs overlap, all letters except the
+        // first and last are double-counted.
+        let mut letter_count: HashMap<char, usize> = HashMap::new();
+        *letter_count.entry(self.template[0]).or_default() += 1;
+        *letter_count.entry(self.template[self.template.len() - 1]).or_default() += 1;
+        for ((a, b), num) in count {
+            *letter_count.entry(a).or_default() += num;
+            *letter_count.entry(b).or_default() += num;
+        }
+
+        letter_count.values_mut().for_each(|num| *num /= 2);
+
+        // Score is the most common element - least common element.
+        letter_count.values().max().unwrap() - letter_count.values().min().unwrap()
     }
 }
 
 #[test]
 fn test_sample() {
-    let mut poly = Polymerization::load("input/day14_sample.txt");
-    poly.step(10);
+    let poly = Polymerization::load("input/day14_sample.txt");
 
-    assert_eq!(1588, poly.score());
+    assert_eq!(1588, poly.score(10));
+    assert_eq!(2188189693529, poly.score(40))
 }
