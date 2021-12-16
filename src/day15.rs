@@ -7,8 +7,10 @@ use std::io::{BufRead, BufReader};
 #[allow(dead_code)]
 pub fn solution() {
     let map = Map::load("input/day15.txt");
-
     println!("Part 1: {}", map.total_risk());
+
+    let big_map = map.expand();
+    println!("Part 2: {}", big_map.total_risk());
 }
 
 struct Map {
@@ -28,6 +30,34 @@ impl Map {
         Map { risk }
     }
 
+    /// Returns a new expanded map with this map as a tile in a 5x5 grid.
+    fn expand(&self) -> Self {
+        let rows = self.risk.len();
+        let cols = self.risk[0].len();
+
+        let mut expanded_risk = vec![vec![0; rows * 5]; cols * 5];
+
+        for row in 0..rows {
+            for col in 0..cols {
+                for expand_row in 0..5 {
+                    for expand_col in 0..5 {
+                        // Each tile's risk is 1 higher than the tile immediately up or to the left.
+                        // Risk levels above 9 wrap back around to 1.
+                        let mut new_risk = self.risk[row][col] + expand_row as i32 + expand_col as i32;
+                        if new_risk > 9 {
+                            new_risk = new_risk % 10 + 1;
+                        }
+
+                        expanded_risk[row + expand_row * rows][col + expand_col * cols] = new_risk;
+                    }
+                }
+            }
+        }
+
+        Map { risk: expanded_risk }
+    }
+
+    /// Returns the risk at the given position.
     fn risk(&self, pos: &Position) -> i32 {
         self.risk[pos.row][pos.col]
     }
@@ -65,6 +95,20 @@ impl Map {
         }
 
         panic!("No path found.")
+    }
+}
+
+impl Debug for Map {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for row in &self.risk {
+            for value in row {
+                write!(f, "{}", value)?;
+            }
+
+            writeln!(f)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -167,4 +211,7 @@ impl Debug for Position {
 fn test_sample() {
     let map = Map::load("input/day15_sample.txt");
     assert_eq!(40, map.total_risk());
+
+    let big_map = map.expand();
+    assert_eq!(315, big_map.total_risk());
 }
