@@ -1,5 +1,6 @@
 use std::ops::RangeInclusive;
 use regex::Regex;
+use rayon::prelude::*;
 
 pub fn solution() {
     let target = Target::parse("target area: x=144..178, y=-100..-76");
@@ -28,34 +29,20 @@ impl Target {
     /// Returns the highest y position that the probe can reach and still hit the target area.
     fn highest_y(&self) -> i64 {
         // brute force.
-        let mut max_y = 0;
-
-        for x in 0..1000 {
-            for y in -1000..1000 {
-                if let Some(probe_max_y) = self.launch_probe(Point::new(x, y)) {
-                    max_y = max_y.max(probe_max_y);
-                }
-            }
-        }
-
-        max_y
+        (0..1000).into_par_iter().flat_map(|x| {
+            (-1000..1000).into_par_iter()
+                .flat_map(move |y| self.launch_probe(Point::new(x, y)))
+        }).max().unwrap_or_default()
     }
 
     /// Returns the number of initial velocity values that cause the probe to eventually be within
     /// the target area.
     fn all_hits(&self) -> usize {
         // also brute force.
-        let mut count = 0;
-
-        for x in 0..1000 {
-            for y in -1000..1000 {
-                if self.launch_probe(Point::new(x, y)).is_some() {
-                    count += 1;
-                }
-            }
-        }
-
-        count
+        (0..1000).into_par_iter().flat_map(|x| {
+            (-1000..1000).into_par_iter()
+                .flat_map(move |y| self.launch_probe(Point::new(x, y)))
+        }).count()
     }
 
     /// Launches a probe with the given starting velocity, returning the highest y value if the
