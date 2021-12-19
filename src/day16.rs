@@ -34,8 +34,6 @@ fn version_sum(s: &str) -> u32 {
             bits
         });
 
-    println!("s: {}, bits: {:?}", s, &bits);
-
     // Parse packets.
     let (packet, _) = parse_packet(&bits, 0);
 
@@ -46,17 +44,14 @@ fn version_sum(s: &str) -> u32 {
 /// next index.
 fn parse_packet(bits: &BitVec<Msb0, usize>, i: usize) -> (Packet, usize) {
     // First three bits are the version
-    let version = bits[i + 0..i + 3].load::<u8>();
+    let version = bits[i + 0..i + 3].load_be::<u8>();
 
     // Next three bits are the type id
-    let type_id = bits[i+3..i+6].load::<u8>();
-
-    println!("Version: {}, type_id: {}", version, type_id);
+    let type_id = bits[i+3..i+6].load_be::<u8>();
 
     if type_id == 4 {
         // Type 4 is a literal value
         let (num, index) = parse_packet_number(bits, i + 6);
-        println!("Literal - num: {}, index: {}", num, index);
 
         return (Packet::Literal { version, type_id, num }, index);
     }
@@ -65,16 +60,13 @@ fn parse_packet(bits: &BitVec<Msb0, usize>, i: usize) -> (Packet, usize) {
     // The next bit is the length_type_id, which determines the number of sub-packets
     let length_type_id = bits[i+6];
 
-    println!("Length type id: {}", length_type_id);
-
     let mut length;
     let mut packets = Vec::new();
     let mut index;
     if length_type_id {
         // The next 11 bits are a number that represents the number of sub-packets immediately
         // contained by this packet.
-        length = bits[i + 7..i + 18].load::<u16>();
-        println!("Sub-packets - Length: {}", length);
+        length = bits[i + 7..i + 18].load_be::<u16>();
 
         index = i + 18;
         for _ in 0..length {
@@ -85,18 +77,14 @@ fn parse_packet(bits: &BitVec<Msb0, usize>, i: usize) -> (Packet, usize) {
     } else {
         // The next 15 bits are a number that represents the total length in bits of
         // sub-packets contained by this packet.
-        length = bits[i + 7..i + 22].load::<u16>();
-        println!("Bits Length: {} - {:?}", length, &bits[i+7..i+22]);
+        length = bits[i + 7..i + 22].load_be::<u16>();
 
         index = i + 22;
         while index < i + 22 + length as usize {
-            println!("Index: {}, limit: {}", index, i + 22 + length as usize);
             let (packet, new_index) = parse_packet(bits, index);
             packets.push(packet);
             index = new_index;
         }
-
-        println!("Index: {}, limit: {}", index, i + 22 + length as usize);
     };
 
     (Packet::Operator { version, type_id, length_type_id, length, packets }, index)
@@ -109,17 +97,13 @@ fn parse_packet_number(bits: &BitVec<Msb0, usize>, i: usize) -> (u32, usize) {
 
     let mut num = 0;
     loop {
-        println!("Section: {:?}", &bits[index + 1..index + 5].load::<u8>());
-
-        num = (num << 4) + bits[index + 1..index + 5].load::<u8>() as u32;
+        num = (num << 4) + bits[index + 1..index + 5].load_be::<u8>() as u32;
         index += 5;
 
         if !bits[index - 5] {
             break;
         }
     }
-
-    println!("Packet #: {}", num);
 
     (num, index)
 }
