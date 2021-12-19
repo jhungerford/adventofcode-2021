@@ -5,6 +5,7 @@ pub fn solution() {
     let target = Target::parse("target area: x=144..178, y=-100..-76");
 
     println!("Part 1: {}", target.highest_y());
+    println!("Part 2: {}", target.all_hits());
 }
 
 struct Target {
@@ -30,32 +31,55 @@ impl Target {
         let mut max_y = 0;
 
         for x in 0..1000 {
-            let mut potential_max_y = 0;
-            for y in 0..1000 {
-                let mut probe = Probe::new(Point::new(x, y));
-
-                loop {
-                    probe.step();
-                    potential_max_y = potential_max_y.max(probe.pos.y);
-
-                    if probe.is_in_target(self) {
-                        max_y = max_y.max(potential_max_y);
-                        break;
-                    }
-
-                    if probe.is_miss(self) {
-                        break;
-                    }
+            for y in -1000..1000 {
+                if let Some(probe_max_y) = self.launch_probe(Point::new(x, y)) {
+                    max_y = max_y.max(probe_max_y);
                 }
-
             }
         }
 
         max_y
     }
+
+    /// Returns the number of initial velocity values that cause the probe to eventually be within
+    /// the target area.
+    fn all_hits(&self) -> usize {
+        // also brute force.
+        let mut count = 0;
+
+        for x in 0..1000 {
+            for y in -1000..1000 {
+                if self.launch_probe(Point::new(x, y)).is_some() {
+                    count += 1;
+                }
+            }
+        }
+
+        count
+    }
+
+    /// Launches a probe with the given starting velocity, returning the highest y value if the
+    /// probe touches the target.
+    fn launch_probe(&self, vel: Point) -> Option<i64> {
+        let mut probe = Probe::new(vel);
+        let mut max_y = probe.pos.y;
+
+        loop {
+            probe.step();
+            max_y = max_y.max(probe.pos.y);
+
+            if probe.is_in_target(self) {
+                return Some(max_y);
+            }
+
+            if probe.is_miss(self) {
+                return None;
+            }
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct Point {
     x: i64,
     y: i64,
@@ -127,4 +151,10 @@ impl Probe {
 fn highest_y_sample() {
     let target = Target::parse("target area: x=20..30, y=-10..-5");
     assert_eq!(45, target.highest_y());
+}
+
+#[test]
+fn all_hits_sample() {
+    let target = Target::parse("target area: x=20..30, y=-10..-5");
+    assert_eq!(112, target.all_hits());
 }
