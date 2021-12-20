@@ -2,6 +2,7 @@ use std::ops::RangeInclusive;
 use regex::Regex;
 use rayon::prelude::*;
 
+#[allow(dead_code)]
 pub fn solution() {
     let target = Target::parse("target area: x=144..178, y=-100..-76");
 
