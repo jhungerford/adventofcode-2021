@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 pub fn solution() {
     println!("Part 1: {}", deterministic_score(8, 7));
+    println!("Part 2: {}", dirac_wins(8, 7));
 }
 
 /// Plays a game of dirac dice with a deterministic d100 (rolls 1, then 2, ...), and returns
@@ -57,7 +58,19 @@ impl DeterministicD100 {
     }
 }
 
+/// Plays a game of dirac dice with a dirac die, and returns the number of universes in which
+/// the winning player won.  A dirac die is a D3 that splits the universe into all possible
+/// outcomes when it's rolled.  The game ends when either player's score reaches at least 21.
+fn dirac_wins(player1_start: i64, player2_start: i64) -> usize {
+    todo!()
+}
+
 #[test]
 fn deterministic_sample() {
     assert_eq!(739785, deterministic_score(4, 8));
+}
+
+#[test]
+fn dirac_sample() {
+    assert_eq!(444356092776315, dirac_wins(4, 8));
 }
