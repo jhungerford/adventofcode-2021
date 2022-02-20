@@ -11,6 +11,7 @@ pub fn solution() {
     let numbers = load("input/day18.txt");
 
     println!("Part 1: {}", sum(&numbers).magnitude());
+    println!("Part 2: {}", largest_magnitude(&numbers));
 }
 
 /// Loads pairs from the given file, one per line.
@@ -29,6 +30,16 @@ fn sum(numbers: &Vec<Number>) -> Number {
     let start = it.next().unwrap();
 
     it.fold(start.clone(), |acc, number| acc + number.clone())
+}
+
+/// Returns the largest magnitude of any sum of two different numbers.
+fn largest_magnitude(nums: &Vec<Number>) -> i32 {
+    (0..nums.len())
+        .flat_map(move |i| (0..nums.len()).map(move |j| (i, j)))
+        .filter(|(i, j)| i != j)
+        .map(|(i, j)| (nums[i].clone() + nums[j].clone()).magnitude())
+        .max()
+        .unwrap()
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -285,4 +296,9 @@ fn sample_magnitudes() {
     assert_eq!(791, "[[[[3,0],[5,3]],[4,4]],[5,5]]".parse::<Number>().unwrap().magnitude());
     assert_eq!(1137, "[[[[5,0],[7,4]],[5,5]],[6,6]]".parse::<Number>().unwrap().magnitude());
     assert_eq!(3488, "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]".parse::<Number>().unwrap().magnitude());
+}
+
+#[test]
+fn sample_largest_magnitude() {
+    assert_eq!(3993, largest_magnitude(&load("input/day18_sample5.txt")));
 }
