@@ -12,6 +12,6 @@ func main() {
 		return
 	}
 
-	part1 := puzzle.Run(2)
-	fmt.Println("Part 1: ", part1.NumLit())
+	fmt.Println("Part 1: ", puzzle.Run(2).NumLit())
+	fmt.Println("Part 2: ", puzzle.Run(50).NumLit())
 }

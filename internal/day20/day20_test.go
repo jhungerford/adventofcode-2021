@@ -16,9 +16,20 @@ func TestSample(t *testing.T) {
 
 	fmt.Println(puzzle)
 
-	grid := puzzle.Run(2)
+	for _, test := range []struct {
+		steps    int
+		expected int
+	}{
+		{2, 35},
+		{50, 3351},
+	} {
+		grid := puzzle.Run(test.steps)
 
-	if grid.NumLit() != 35 {
-		t.Fatalf("Grid should have 35 pixels after 2 steps, but has %d\nGrid:\n%s", grid.NumLit(), grid)
+		actual := grid.NumLit()
+
+		if actual != test.expected {
+			t.Fatalf("Grid should have %d pixels after %d steps, but has %d\nGrid:\n%s",
+				test.expected, test.steps, actual, grid)
+		}
 	}
 }
